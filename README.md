@@ -1,5 +1,7 @@
 # TMT SmartConnect
 
+[![Arduino Library](https://www.ardu-badge.com/badge/TMT_SmartConnect.svg)](https://www.ardu-badge.com/TMT_SmartConnect)
+
 **Nền Tảng IoT Cloud Control — Hỗ Trợ ESP32/ESP8266 — Dashboard 8 Kênh**
 
 Giải pháp điều khiển thiết bị điện qua Internet – ổn định, linh hoạt, dễ triển khai cho mọi nhu cầu.
