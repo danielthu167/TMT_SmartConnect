@@ -60,12 +60,7 @@ Lấy API Key (Device ID) tại: [smartconnect.tmtelectronic.com](https://smartc
 
 ## Chi Phí Sử Dụng
 
-| Gói | Giá |
-|-----|-----|
-| Tháng | 59.000đ / thiết bị |
-| Năm | 468.000đ / thiết bị (tiết kiệm ~34%) |
-
-Bao gồm: server cloud ổn định, điều khiển realtime, cập nhật & hỗ trợ kỹ thuật.
+Xem chi tiết tại: [TMT Smart Connect — Nền Tảng IoT Cloud Control](https://smartconnect.tmtelectronic.com/products/detail/?slug=tmt-smart-connect-nen-tang-iot-cloud-control)
 
 ## Lợi Ích
 
