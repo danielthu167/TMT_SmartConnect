@@ -14,9 +14,9 @@
 
 // ── Cấu hình ─────────────────────────────────────────────────────────────────
 
-#define WIFI_SSID "TMT Electronic Guest"
-#define WIFI_PASSWORD ""
-#define API_KEY "TMTK_2FB8D5CEBEBFC2512695F49AB5E9D641F5039517"
+#define WIFI_SSID "YourWiFiSSID"
+#define WIFI_PASSWORD "YourWiFiPassword"
+#define API_KEY "TMTK_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 #ifdef ESP8266
 #define LED_PIN LED_BUILTIN // GPIO2 trên NodeMCU (active LOW)

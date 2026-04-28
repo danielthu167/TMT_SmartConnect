@@ -38,11 +38,12 @@ class TmtSmartConnect {
 public:
   TmtSmartConnect();
 
+#define TMT_SMART_CONNECT_DEFAULT_HOST "smartconnect.tmtelectronic.com"
 
   // Start connection to server. Must be called after WiFi is connected.
   // apiKey: TMTK_xxx key from TMT SmartConnect admin panel
   void begin(const char *apiKey,
-             const char *host = "smartconnect.tmtelectronic.com",
+             const char *host = TMT_SMART_CONNECT_DEFAULT_HOST,
              uint16_t port = TMT_SMART_CONNECT_DEFAULT_PORT);
 
   // Register callback for incoming commands on a channel
