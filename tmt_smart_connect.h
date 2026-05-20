@@ -29,10 +29,24 @@
 
 #define TMT_MAX_CHANNELS 8
 #define TMT_RX_BUF_SIZE 1024
+#define TMT_CHANNEL_STR_LEN 32
 
 typedef void (*VirtualWriteCallback)(bool value);
 typedef void (*ConnectCallback)();
 typedef void (*DisconnectCallback)();
+
+enum TmtChannelType { TMT_BUTTON = 0, TMT_STRING = 1, TMT_NUMBER = 2 };
+
+union TmtChannelValue {
+  bool b;
+  char s[TMT_CHANNEL_STR_LEN];
+  float n;
+};
+
+struct TmtChannel {
+  TmtChannelType type;
+  TmtChannelValue value;
+};
 
 class TmtSmartConnect {
 public:
@@ -46,12 +60,22 @@ public:
              const char *host = TMT_SMART_CONNECT_DEFAULT_HOST,
              uint16_t port = TMT_SMART_CONNECT_DEFAULT_PORT);
 
-  // Register callback for incoming commands on a channel
+  // Register callback for incoming commands on a channel (button channels only)
   void onWrite(uint8_t channel, VirtualWriteCallback callback);
 
-  // Read / write channel state
+  // Read / write channel state — button (boolean)
   bool virtualRead(uint8_t channel) const;
   void virtualWrite(uint8_t channel, bool value);
+  void virtualWriteButton(uint8_t channel,
+                          bool value); // alias for virtualWrite
+
+  // Read / write channel state — string (read-only sensor value)
+  const char *virtualReadString(uint8_t channel) const;
+  void virtualWriteString(uint8_t channel, const char *value);
+
+  // Read / write channel state — number (read-only sensor value)
+  float virtualReadNumber(uint8_t channel) const;
+  void virtualWriteNumber(uint8_t channel, float value);
 
   // Optional connect / disconnect callbacks
   void onConnect(ConnectCallback cb) { _onConnect = cb; }
@@ -96,7 +120,7 @@ private:
   static const int RECONNECT_BACKOFF_STEP = 5; // every 5 attempts +2s
 
   // Channels
-  bool _channelStates[TMT_MAX_CHANNELS];
+  TmtChannel _channels[TMT_MAX_CHANNELS];
   VirtualWriteCallback _callbacks[TMT_MAX_CHANNELS];
 
   // User callbacks

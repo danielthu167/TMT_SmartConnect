@@ -1,15 +1,30 @@
 /*
  * TMT SmartConnect — MultiChannel example
  *
- * Điều khiển 2 relay và gửi trạng thái nút vật lý lên dashboard.
- * V0 → relay 1 (nhận lệnh từ dashboard)
- * V1 → relay 2 (nhận lệnh từ dashboard)
- * V2 → trạng thái nút vật lý (ESP gửi lên dashboard)
+ * Kênh button (nhận lệnh từ dashboard):
+ *   V0 → relay 1
+ *   V1 → relay 2
+ *
+ * Kênh button (ESP gửi lên dashboard):
+ *   V2 → trạng thái nút vật lý
+ *
+ * Kênh string (ESP gửi chuỗi cảm biến lên dashboard, chỉ đọc):
+ *   V3 → trạng thái dạng text (ví dụ: "OK", "ERROR")
+ *
+ * Kênh number (ESP gửi số đo lên dashboard, chỉ đọc):
+ *   V4 → nhiệt độ (°C)
+ *   V5 → độ ẩm (%)
+ *
+ * Cài đặt dashboard:
+ *   V0, V1, V2 → chọn type "Nút bấm"
+ *   V3         → chọn type "Văn bản"
+ *   V4         → chọn type "Số đo", đơn vị "°C"
+ *   V5         → chọn type "Số đo", đơn vị "%"
  *
  * Cài đặt:
  *   1. Điền WIFI_SSID, WIFI_PASSWORD, API_KEY bên dưới
  *   2. Chọn board: ESP8266 hoặc ESP32
- *   3. Upload → vào trang cấu hình thiết bị, thêm các kênh V0, V1, V2
+ *   3. Upload → vào trang cấu hình thiết bị, cấu hình kênh như trên
  */
 
 #include <TMT_SmartConnect.h>
@@ -29,6 +44,12 @@
 TmtSmartConnect tmt;
 
 bool lastButtonState = false;
+
+// Giả lập đọc cảm biến nhiệt độ và độ ẩm
+float readTemperature() { return 25.0f + random(-30, 50) / 10.0f; }
+float readHumidity() { return 60.0f + random(-100, 100) / 10.0f; }
+
+unsigned long lastSensorUpdate = 0;
 
 // ── Setup ────────────────────────────────────────────────────────────────────
 
@@ -71,6 +92,11 @@ void setup() {
 
   // Khởi động TMT SmartConnect — WiFi phải kết nối trước
   tmt.begin(API_KEY);
+
+  // Gửi trạng thái ban đầu cho kênh string/number
+  tmt.virtualWriteString(V3, "OK");
+  tmt.virtualWriteNumber(V4, readTemperature());
+  tmt.virtualWriteNumber(V5, readHumidity());
 }
 
 // ── Loop ─────────────────────────────────────────────────────────────────────
@@ -78,12 +104,29 @@ void setup() {
 void loop() {
   tmt.loop();
 
-  // Đọc nút vật lý và gửi trạng thái lên V2
+  // Đọc nút vật lý và gửi trạng thái lên V2 (button channel)
   bool btn = (digitalRead(BUTTON_PIN) == LOW); // active LOW
   if (btn != lastButtonState) {
     lastButtonState = btn;
-    tmt.virtualWrite(V2, btn);
+    tmt.virtualWrite(V2, btn); // or: tmt.virtualWriteButton(V2, btn)
     Serial.printf("[V2] Nút = %s\n", btn ? "NHẤN" : "THẢ");
+  }
+
+  // Gửi dữ liệu cảm biến lên dashboard mỗi 5 giây
+  if (millis() - lastSensorUpdate > 5000) {
+    lastSensorUpdate = millis();
+
+    // String channel: trạng thái dạng text
+    tmt.virtualWriteString(V3, "OK");
+    Serial.println("[V3] Trạng thái = OK");
+
+    // Number channels: giá trị số đo
+    float temp = readTemperature();
+    float hum = readHumidity();
+    tmt.virtualWriteNumber(V4, temp);
+    tmt.virtualWriteNumber(V5, hum);
+    Serial.printf("[V4] Nhiệt độ = %.1f°C\n", temp);
+    Serial.printf("[V5] Độ ẩm = %.1f%%\n", hum);
   }
 
   delay(10); // yield for WiFi/TCP stack; helps prevent ESP8266 WDT reset

@@ -10,7 +10,7 @@ TmtSmartConnect::TmtSmartConnect()
       _onConnect(nullptr), _onDisconnect(nullptr) {
   memset(_apiKey, 0, sizeof(_apiKey));
   memset(_host, 0, sizeof(_host));
-  memset(_channelStates, 0, sizeof(_channelStates));
+  memset(_channels, 0, sizeof(_channels));
   memset(_callbacks, 0, sizeof(_callbacks));
   memset(_rxBuf, 0, sizeof(_rxBuf));
 }
@@ -34,13 +34,51 @@ void TmtSmartConnect::onWrite(uint8_t ch, VirtualWriteCallback cb) {
 }
 
 bool TmtSmartConnect::virtualRead(uint8_t ch) const {
-  return (ch < TMT_MAX_CHANNELS) ? _channelStates[ch] : false;
+  if (ch >= TMT_MAX_CHANNELS)
+    return false;
+  return _channels[ch].value.b;
 }
 
 void TmtSmartConnect::virtualWrite(uint8_t ch, bool value) {
   if (ch >= TMT_MAX_CHANNELS)
     return;
-  _channelStates[ch] = value;
+  _channels[ch].type = TMT_BUTTON;
+  _channels[ch].value.b = value;
+  if (_socketConnected)
+    _sendDeviceData();
+}
+
+void TmtSmartConnect::virtualWriteButton(uint8_t ch, bool value) {
+  virtualWrite(ch, value);
+}
+
+const char *TmtSmartConnect::virtualReadString(uint8_t ch) const {
+  if (ch >= TMT_MAX_CHANNELS)
+    return "";
+  return _channels[ch].value.s;
+}
+
+void TmtSmartConnect::virtualWriteString(uint8_t ch, const char *value) {
+  if (ch >= TMT_MAX_CHANNELS || !value)
+    return;
+  _channels[ch].type = TMT_STRING;
+  strncpy(_channels[ch].value.s, value, TMT_CHANNEL_STR_LEN - 1);
+  _channels[ch].value.s[TMT_CHANNEL_STR_LEN - 1] = '\0';
+  if (_socketConnected)
+    _sendDeviceData();
+}
+
+float TmtSmartConnect::virtualReadNumber(uint8_t ch) const {
+  if (ch >= TMT_MAX_CHANNELS)
+    return 0.0f;
+  return _channels[ch].value.n;
+}
+
+void TmtSmartConnect::virtualWriteNumber(uint8_t ch, float value) {
+  if (ch >= TMT_MAX_CHANNELS)
+    return;
+  _channels[ch].type = TMT_NUMBER;
+  _channels[ch].value.n = value;
   if (_socketConnected)
     _sendDeviceData();
 }
@@ -451,7 +489,8 @@ void TmtSmartConnect::_handleClientStatus(const char *json, size_t len) {
     return;
 
   bool val = _extractBoolField(src, srcLen, "value");
-  _channelStates[idx] = val;
+  _channels[idx].type = TMT_BUTTON;
+  _channels[idx].value.b = val;
 
   if (_callbacks[idx])
     _callbacks[idx](val);
@@ -492,7 +531,44 @@ String TmtSmartConnect::_buildDeviceDataJson() {
     j += "\"V";
     j += i;
     j += "\":";
-    j += _channelStates[i] ? "true" : "false";
+    switch (_channels[i].type) {
+    case TMT_STRING: {
+      j += "\"";
+      const char *src = _channels[i].value.s;
+      while (*src) {
+        if (*src == '"' || *src == '\\') {
+          j += '\\';
+          j += *src;
+        } else if (*src == '\n') {
+          j += "\\n";
+        } else if (*src == '\r') {
+          j += "\\r";
+        } else {
+          j += *src;
+        }
+        src++;
+      }
+      j += "\"";
+      break;
+    }
+    case TMT_NUMBER: {
+      char buf[16];
+      dtostrf(_channels[i].value.n, 1, 4, buf);
+      // trim trailing zeros after decimal point
+      char *dot = strchr(buf, '.');
+      if (dot) {
+        char *end = buf + strlen(buf) - 1;
+        while (end > dot + 1 && *end == '0')
+          end--;
+        *(end + 1) = '\0';
+      }
+      j += buf;
+      break;
+    }
+    default: // TMT_BUTTON
+      j += _channels[i].value.b ? "true" : "false";
+      break;
+    }
   }
   j += "}}}";
   return j;
